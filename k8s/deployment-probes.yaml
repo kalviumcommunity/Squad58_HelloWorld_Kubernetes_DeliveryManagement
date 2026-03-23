@@ -1,0 +1,35 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: probe-demo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: probe-demo
+  template:
+    metadata:
+      labels:
+        app: probe-demo
+    spec:
+      containers:
+        - name: probe-container
+          image: nginx
+          ports:
+            - containerPort: 80
+
+          # LIVENESS PROBE (restart container)
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 5
+
+          # READINESS PROBE (control traffic)
+          readinessProbe:
+            httpGet:
+              path: /ready   # this will FAIL intentionally
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 5
