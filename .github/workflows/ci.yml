@@ -19,18 +19,15 @@ jobs:
         with:
           node-version: '18'
 
-      # ✅ MOVE INTO FRONTEND
       - name: Install Dependencies
         working-directory: ./frontend
         run: npm install
 
-      # ✅ SECRET STEP
       - name: Use Secret Securely
         env:
           API_KEY: ${{ secrets.API_KEY }}
         run: echo "Using API key securely"
 
-      # ✅ RUN TESTS FROM FRONTEND
       - name: Run Tests
         working-directory: ./frontend
         run: npm test
