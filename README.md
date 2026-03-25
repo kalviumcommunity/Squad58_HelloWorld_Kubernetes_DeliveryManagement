@@ -1,166 +1,106 @@
-# Delivery Management System (Sprint #3)
+# Delivery Management Platform (Frontend + Backend + DevOps)
 
-## Overview
+This repository demonstrates a production-style baseline for a delivery service that needs frequent pricing/menu updates without full-system downtime.
 
-This project is part of Sprint #3 and focuses on building a cloud-native Delivery Management System using modern DevOps practices.
+## Problem Mapping
 
-The objective is to demonstrate:
+- Real-time rollout support: stable/canary pricing logic exposed through API query versioning.
+- No database dependency: menus and restaurant data are hardcoded for assignment/demo use.
+- Deployment readiness: Dockerized frontend/backend, Kubernetes Helm chart, and GitHub Actions CI/CD.
 
-* Containerized application development
-* Kubernetes-based deployment
-* CI/CD pipeline integration
-* Structured Git workflows
+## Architecture
 
----
+- Frontend: React + Vite UI for city-based menu view and pricing simulation.
+- Backend: Express API with health checks, city/menu endpoints, and pricing algorithm versions.
+- Container Runtime: Docker multi-stage images.
+- Orchestration: Helm chart deploying both services with probes.
+- CI/CD: GitHub Actions pipeline for test/build, image publish, and Helm deployment.
 
-## Project Structure
+## API Endpoints
 
-```
-.
-├── backend/        # Node.js backend services
-├── frontend/       # React (Vite) frontend application
-└── README.md
-```
+- `GET /health` -> service health
+- `GET /api/cities` -> available city list
+- `GET /api/menus?city=Bangalore` -> menu snapshot per city
+- `GET /api/pricing/quote?city=Bangalore&distanceKm=4&peak=true&version=canary` -> delivery fee quote
 
----
+## Local Development
 
-## Tech Stack
+### 1) Backend
 
-### Backend
-
-* Node.js
-* Express
-
-### Frontend
-
-* React
-* Vite
-
-### DevOps Tools
-
-* Docker
-* Kubernetes (Minikube / Docker Desktop / Kind)
-* GitHub Actions (CI/CD)
-* Helm (optional)
-
----
-
-## Getting Started
-
-### 1. Clone the Repository
-
-```
-git clone https://github.com/<your-username>/Squad58_HelloWorld_Kubernetes_DeliveryManagement.git
-cd Squad58_HelloWorld_Kubernetes_DeliveryManagement
-```
-
----
-
-### 2. Run Backend
-
-```
+```bash
 cd backend
 npm install
-npm start
+npm test
+npm run dev
 ```
 
----
+Backend runs at `http://localhost:8080`.
 
-### 3. Run Frontend
+### 2) Frontend
 
-```
+```bash
 cd frontend
 npm install
 npm run dev
 ```
 
----
+Frontend runs at `http://localhost:5173` and proxies `/api` to backend.
+
+## Run with Docker Compose
+
+```bash
+docker compose up --build
+```
+
+- Frontend: `http://localhost:3000`
+- Backend API: `http://localhost:8080`
+
+## Deploy with Helm
+
+1. Update image repositories in `delivery-app/values.yaml`.
+2. Install/upgrade chart:
+
+```bash
+helm upgrade --install delivery-app ./delivery-app \
+	--namespace delivery-app \
+	--create-namespace
+```
+
+3. Optional ingress:
+
+```bash
+helm upgrade --install delivery-app ./delivery-app \
+	--namespace delivery-app \
+	--set ingress.enabled=true \
+	--set ingress.host=delivery.local
+```
 
 ## CI/CD Pipeline
 
-This project includes a Continuous Integration pipeline using GitHub Actions.
+Workflow file: `.github/workflows/ci.yml`
 
-### Pipeline Features
+Pipeline stages:
 
-* Automatically triggers on push and pull requests
-* Installs dependencies
-* Builds the frontend application
-* Fails early if build issues are detected
+1. Install dependencies.
+2. Run backend tests.
+3. Build frontend.
+4. Validate Docker builds (PR + push).
+5. On push to main/master:
+	 - Push backend/frontend Docker images to Docker Hub.
+	 - Deploy to Kubernetes using Helm.
 
-### Pipeline Location
+Required GitHub Secrets:
 
+- `DOCKERHUB_USERNAME`
+- `DOCKERHUB_TOKEN`
+- `KUBE_CONFIG_BASE64` (base64 kubeconfig content)
+
+## Verified Commands in This Repo
+
+These commands were executed successfully:
+
+```bash
+cd backend && npm test
+cd frontend && npm run build
+helm lint ./delivery-app
 ```
-.github/workflows/ci.yml
-```
-
----
-
-## Git Workflow
-
-This repository follows a structured Git workflow:
-
-### Branching Strategy
-
-* `main` → stable production-ready code
-* `feature/*` → development branches for new features or improvements
-
-### Commit Practices
-
-* Use small, meaningful commits
-* Follow clear commit messages describing changes
-
-Example:
-
-```
-Add CI pipeline for automated build validation
-Update README with project structure
-Fix frontend build issue
-```
-
----
-
-## Contribution Guidelines
-
-1. Create a new branch from `main`:
-
-```
-git checkout -b feature/your-feature-name
-```
-
-2. Make changes with clear commits:
-
-```
-git commit -m "Describe your change"
-```
-
-3. Push branch:
-
-```
-git push origin feature/your-feature-name
-```
-
-4. Create a Pull Request for review
-
----
-
-## DevOps Practices Implemented
-
-* Continuous Integration using GitHub Actions
-* Automated build validation
-* Structured repository organization
-* Branch-based development workflow
-
----
-
-## Future Improvements
-
-* Add automated testing stage in CI pipeline
-* Integrate Docker image build and push
-* Deploy application to Kubernetes cluster
-* Add Helm charts for deployment automation
-
----
-
-## Conclusion
-
-This project establishes a foundation for DevOps-driven development by combining version control discipline, CI/CD automation, and scalable deployment practices.
