@@ -1,166 +1,160 @@
-# Delivery Management System (Sprint #3)
+# DevOps System – Kubernetes CI/CD Project
 
-## Overview
+## 1. System Overview
 
-This project is part of Sprint #3 and focuses on building a cloud-native Delivery Management System using modern DevOps practices.
+This project implements a complete DevOps workflow for deploying and operating a containerized application using Kubernetes and CI/CD pipelines.
 
-The objective is to demonstrate:
+The system ensures:
 
-* Containerized application development
-* Kubernetes-based deployment
-* CI/CD pipeline integration
-* Structured Git workflows
+* Automated builds and deployments
+* Scalable and reliable application management
+* Continuous monitoring and alerting
+* Safe failure handling and recovery
 
----
-
-## Project Structure
-
-```
-.
-├── backend/        # Node.js backend services
-├── frontend/       # React (Vite) frontend application
-└── README.md
-```
+Kubernetes is used for orchestration, and CI/CD ensures consistent and repeatable deployments.
 
 ---
 
-## Tech Stack
+## 2. Architecture Overview
 
-### Backend
+### Workflow
 
-* Node.js
-* Express
-
-### Frontend
-
-* React
-* Vite
-
-### DevOps Tools
-
-* Docker
-* Kubernetes (Minikube / Docker Desktop / Kind)
-* GitHub Actions (CI/CD)
-* Helm (optional)
+1. Developer pushes code to GitHub
+2. CI pipeline builds and tests the application
+3. Docker image is created and pushed to registry
+4. Kubernetes pulls and deploys the image
+5. Prometheus collects metrics
+6. Grafana visualizes system performance
+7. Alerts detect failures
 
 ---
 
-## Getting Started
+## 3. Architecture Table
 
-### 1. Clone the Repository
-
-```
-git clone https://github.com/<your-username>/Squad58_HelloWorld_Kubernetes_DeliveryManagement.git
-cd Squad58_HelloWorld_Kubernetes_DeliveryManagement
-```
-
----
-
-### 2. Run Backend
-
-```
-cd backend
-npm install
-npm start
-```
+| Layer         | Responsibility            | Technology             |
+| ------------- | ------------------------- | ---------------------- |
+| Containers    | Build and run application | Docker                 |
+| CI/CD         | Build, test, deploy       | GitHub Actions         |
+| Registry      | Store images              | Docker Hub             |
+| Orchestration | Manage workloads          | Kubernetes             |
+| Configuration | Environment variables     | ConfigMaps, Secrets    |
+| Observability | Metrics and dashboards    | Prometheus, Grafana    |
+| Alerting      | Failure detection         | Prometheus Alerts      |
+| Reliability   | Rollouts and recovery     | Kubernetes Deployments |
+| Validation    | System checks             | Smoke tests            |
 
 ---
 
-### 3. Run Frontend
+## 4. Containerization Strategy
 
-```
-cd frontend
-npm install
-npm run dev
-```
+The application is containerized using Docker.
 
----
+* Multi-stage builds used for optimization
+* No secrets stored in images
+* Images are versioned and reproducible
 
-## CI/CD Pipeline
-
-This project includes a Continuous Integration pipeline using GitHub Actions.
-
-### Pipeline Features
-
-* Automatically triggers on push and pull requests
-* Installs dependencies
-* Builds the frontend application
-* Fails early if build issues are detected
-
-### Pipeline Location
-
-```
-.github/workflows/ci.yml
-```
+This ensures consistency across environments.
 
 ---
 
-## Git Workflow
+## 5. CI/CD Pipeline
 
-This repository follows a structured Git workflow:
+The pipeline performs:
 
-### Branching Strategy
+* Code checkout
+* Dependency installation
+* Build process
+* Docker image creation
+* Image push to registry
+* Deployment to Kubernetes
 
-* `main` → stable production-ready code
-* `feature/*` → development branches for new features or improvements
-
-### Commit Practices
-
-* Use small, meaningful commits
-* Follow clear commit messages describing changes
-
-Example:
-
-```
-Add CI pipeline for automated build validation
-Update README with project structure
-Fix frontend build issue
-```
+This ensures that every code change is automatically validated and deployed.
 
 ---
 
-## Contribution Guidelines
+## 6. Kubernetes Deployment
 
-1. Create a new branch from `main`:
+The system uses:
 
-```
-git checkout -b feature/your-feature-name
-```
+* Deployments for application lifecycle
+* Services for network access
+* ConfigMaps and Secrets for configuration
+* Readiness and liveness probes for health checks
 
-2. Make changes with clear commits:
-
-```
-git commit -m "Describe your change"
-```
-
-3. Push branch:
-
-```
-git push origin feature/your-feature-name
-```
-
-4. Create a Pull Request for review
+This ensures scalability, reliability, and safe rollouts.
 
 ---
 
-## DevOps Practices Implemented
+## 7. Observability
 
-* Continuous Integration using GitHub Actions
-* Automated build validation
-* Structured repository organization
-* Branch-based development workflow
+### Metrics
+
+Prometheus collects:
+
+* CPU usage
+* Memory usage
+* Pod status
+
+### Dashboards
+
+Grafana visualizes metrics using dashboards.
+
+### Logs
+
+Logs are centralized for debugging.
+
+### Alerts
+
+Alerts detect unhealthy conditions such as pod failures.
 
 ---
 
-## Future Improvements
+## 8. Failure Handling and Recovery
 
-* Add automated testing stage in CI pipeline
-* Integrate Docker image build and push
-* Deploy application to Kubernetes cluster
-* Add Helm charts for deployment automation
+Failures are simulated by:
+
+* Deleting pods
+* Scaling deployments to zero
+
+Kubernetes automatically recreates pods.
+
+Rollbacks are used to restore stable versions when needed.
 
 ---
 
-## Conclusion
+## 9. Validation
 
-This project establishes a foundation for DevOps-driven development by combining version control discipline, CI/CD automation, and scalable deployment practices.
+The system is validated using:
+
+* Deployment checks
+* Service accessibility tests
+* Repeated requests to confirm stability
+
+This ensures that deployments are not only successful but functional.
+
+---
+
+## 10. Key Engineering Decisions
+
+* CI/CD automation ensures repeatability
+* Kubernetes ensures scalability and self-healing
+* Observability provides visibility into system behavior
+* Alerting ensures proactive issue detection
+
+These decisions make the system production-ready.
+
+---
+
+## 11. Reflection
+
+### Challenge
+
+Managing integration between CI/CD, Kubernetes, and monitoring tools.
+
+### Learning
+
+Understanding system behavior through metrics and alerts.
+
+### Improvement
+
+Implement advanced alerting and autoscaling for better performance.
