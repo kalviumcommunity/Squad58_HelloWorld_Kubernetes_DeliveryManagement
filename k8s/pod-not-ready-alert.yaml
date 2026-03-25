@@ -1,0 +1,11 @@
+groups:
+- name: basic-alerts
+  rules:
+  - alert: PodNotReady
+    expr: kube_pod_status_ready{condition="false"} == 1
+    for: 1m
+    labels:
+      severity: warning
+    annotations:
+      summary: "Pod is not ready"
+      description: "A pod has been in not ready state for more than 1 minute"
