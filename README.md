@@ -1,160 +1,106 @@
-# DevOps System – Kubernetes CI/CD Project
+# Delivery Management Platform (Frontend + Backend + DevOps)
 
-## 1. System Overview
+This repository demonstrates a production-style baseline for a delivery service that needs frequent pricing/menu updates without full-system downtime.
 
-This project implements a complete DevOps workflow for deploying and operating a containerized application using Kubernetes and CI/CD pipelines.
+## Problem Mapping
 
-The system ensures:
+- Real-time rollout support: stable/canary pricing logic exposed through API query versioning.
+- No database dependency: menus and restaurant data are hardcoded for assignment/demo use.
+- Deployment readiness: Dockerized frontend/backend, Kubernetes Helm chart, and GitHub Actions CI/CD.
 
-* Automated builds and deployments
-* Scalable and reliable application management
-* Continuous monitoring and alerting
-* Safe failure handling and recovery
+## Architecture
 
-Kubernetes is used for orchestration, and CI/CD ensures consistent and repeatable deployments.
+- Frontend: React + Vite UI for city-based menu view and pricing simulation.
+- Backend: Express API with health checks, city/menu endpoints, and pricing algorithm versions.
+- Container Runtime: Docker multi-stage images.
+- Orchestration: Helm chart deploying both services with probes.
+- CI/CD: GitHub Actions pipeline for test/build, image publish, and Helm deployment.
 
----
+## API Endpoints
 
-## 2. Architecture Overview
+- `GET /health` -> service health
+- `GET /api/cities` -> available city list
+- `GET /api/menus?city=Bangalore` -> menu snapshot per city
+- `GET /api/pricing/quote?city=Bangalore&distanceKm=4&peak=true&version=canary` -> delivery fee quote
 
-### Workflow
+## Local Development
 
-1. Developer pushes code to GitHub
-2. CI pipeline builds and tests the application
-3. Docker image is created and pushed to registry
-4. Kubernetes pulls and deploys the image
-5. Prometheus collects metrics
-6. Grafana visualizes system performance
-7. Alerts detect failures
+### 1) Backend
 
----
+```bash
+cd backend
+npm install
+npm test
+npm run dev
+```
 
-## 3. Architecture Table
+Backend runs at `http://localhost:8080`.
 
-| Layer         | Responsibility            | Technology             |
-| ------------- | ------------------------- | ---------------------- |
-| Containers    | Build and run application | Docker                 |
-| CI/CD         | Build, test, deploy       | GitHub Actions         |
-| Registry      | Store images              | Docker Hub             |
-| Orchestration | Manage workloads          | Kubernetes             |
-| Configuration | Environment variables     | ConfigMaps, Secrets    |
-| Observability | Metrics and dashboards    | Prometheus, Grafana    |
-| Alerting      | Failure detection         | Prometheus Alerts      |
-| Reliability   | Rollouts and recovery     | Kubernetes Deployments |
-| Validation    | System checks             | Smoke tests            |
+### 2) Frontend
 
----
+```bash
+cd frontend
+npm install
+npm run dev
+```
 
-## 4. Containerization Strategy
+Frontend runs at `http://localhost:5173` and proxies `/api` to backend.
 
-The application is containerized using Docker.
+## Run with Docker Compose
 
-* Multi-stage builds used for optimization
-* No secrets stored in images
-* Images are versioned and reproducible
+```bash
+docker compose up --build
+```
 
-This ensures consistency across environments.
+- Frontend: `http://localhost:3000`
+- Backend API: `http://localhost:8080`
 
----
+## Deploy with Helm
 
-## 5. CI/CD Pipeline
+1. Update image repositories in `delivery-app/values.yaml`.
+2. Install/upgrade chart:
 
-The pipeline performs:
+```bash
+helm upgrade --install delivery-app ./delivery-app \
+	--namespace delivery-app \
+	--create-namespace
+```
 
-* Code checkout
-* Dependency installation
-* Build process
-* Docker image creation
-* Image push to registry
-* Deployment to Kubernetes
+3. Optional ingress:
 
-This ensures that every code change is automatically validated and deployed.
+```bash
+helm upgrade --install delivery-app ./delivery-app \
+	--namespace delivery-app \
+	--set ingress.enabled=true \
+	--set ingress.host=delivery.local
+```
 
----
+## CI/CD Pipeline
 
-## 6. Kubernetes Deployment
+Workflow file: `.github/workflows/ci.yml`
 
-The system uses:
+Pipeline stages:
 
-* Deployments for application lifecycle
-* Services for network access
-* ConfigMaps and Secrets for configuration
-* Readiness and liveness probes for health checks
+1. Install dependencies.
+2. Run backend tests.
+3. Build frontend.
+4. Validate Docker builds (PR + push).
+5. On push to main/master:
+	 - Push backend/frontend Docker images to Docker Hub.
+	 - Deploy to Kubernetes using Helm.
 
-This ensures scalability, reliability, and safe rollouts.
+Required GitHub Secrets:
 
----
+- `DOCKERHUB_USERNAME`
+- `DOCKERHUB_TOKEN`
+- `KUBE_CONFIG_BASE64` (base64 kubeconfig content)
 
-## 7. Observability
+## Verified Commands in This Repo
 
-### Metrics
+These commands were executed successfully:
 
-Prometheus collects:
-
-* CPU usage
-* Memory usage
-* Pod status
-
-### Dashboards
-
-Grafana visualizes metrics using dashboards.
-
-### Logs
-
-Logs are centralized for debugging.
-
-### Alerts
-
-Alerts detect unhealthy conditions such as pod failures.
-
----
-
-## 8. Failure Handling and Recovery
-
-Failures are simulated by:
-
-* Deleting pods
-* Scaling deployments to zero
-
-Kubernetes automatically recreates pods.
-
-Rollbacks are used to restore stable versions when needed.
-
----
-
-## 9. Validation
-
-The system is validated using:
-
-* Deployment checks
-* Service accessibility tests
-* Repeated requests to confirm stability
-
-This ensures that deployments are not only successful but functional.
-
----
-
-## 10. Key Engineering Decisions
-
-* CI/CD automation ensures repeatability
-* Kubernetes ensures scalability and self-healing
-* Observability provides visibility into system behavior
-* Alerting ensures proactive issue detection
-
-These decisions make the system production-ready.
-
----
-
-## 11. Reflection
-
-### Challenge
-
-Managing integration between CI/CD, Kubernetes, and monitoring tools.
-
-### Learning
-
-Understanding system behavior through metrics and alerts.
-
-### Improvement
-
-Implement advanced alerting and autoscaling for better performance.
+```bash
+cd backend && npm test
+cd frontend && npm run build
+helm lint ./delivery-app
+```

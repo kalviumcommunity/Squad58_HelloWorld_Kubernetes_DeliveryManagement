@@ -1,23 +1,12 @@
-# Base image
-FROM node:20-alpine
-
-# Set working directory
+FROM node:20-alpine AS build
 WORKDIR /app
-
-# Copy only package files first (for caching)
-COPY package.json package-lock.json ./
-
-# Install dependencies
-RUN npm install
-
-# Copy rest of the code
+COPY package*.json ./
+RUN npm ci
 COPY . .
-
-# Build the app
 RUN npm run build
 
-# Expose port
-EXPOSE 5173
-
-# Start app
-CMD ["npm", "run", "preview"]
+FROM nginx:1.27-alpine
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY --from=build /app/dist /usr/share/nginx/html
+EXPOSE 80
+CMD ["nginx", "-g", "daemon off;"]

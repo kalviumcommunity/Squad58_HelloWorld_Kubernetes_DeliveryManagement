@@ -1,29 +1,114 @@
-name: CI Pipeline
+name: Delivery CI/CD
 
 on:
   push:
-    branches: ["main"]
+    branches: ["main", "master"]
   pull_request:
-    branches: ["main"]
+    branches: ["main", "master"]
 
 jobs:
-  build:
+  test-and-build:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v3
+      - name: Checkout
+        uses: actions/checkout@v4
 
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: |
+            backend/package-lock.json
+            frontend/package-lock.json
 
-      # ✅ FIX: correct folder
-      - name: Install Dependencies
+      - name: Install backend dependencies
+        working-directory: ./backend
+        run: npm ci
+
+      - name: Run backend tests
+        working-directory: ./backend
+        run: npm test
+
+      - name: Install frontend dependencies
         working-directory: ./frontend
-        run: npm install
+        run: npm ci
 
-      # ✅ FIX: avoid test error
-      - name: Run Tests
-        run: echo "No tests configured"
+      - name: Build frontend
+        working-directory: ./frontend
+        run: npm run build
+
+  docker:
+    runs-on: ubuntu-latest
+    needs: test-and-build
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Validate backend Docker build
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          push: false
+
+      - name: Validate frontend Docker build
+        uses: docker/build-push-action@v6
+        with:
+          context: ./frontend
+          push: false
+
+      - name: Login to Docker Hub
+        if: github.event_name == 'push' && github.ref_name == 'main'
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push backend image
+        if: github.event_name == 'push' && github.ref_name == 'main'
+        uses: docker/build-push-action@v6
+        with:
+          context: ./backend
+          push: true
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/delivery-backend:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/delivery-backend:${{ github.sha }}
+
+      - name: Build and push frontend image
+        if: github.event_name == 'push' && github.ref_name == 'main'
+        uses: docker/build-push-action@v6
+        with:
+          context: ./frontend
+          push: true
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/delivery-frontend:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/delivery-frontend:${{ github.sha }}
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: docker
+    if: github.event_name == 'push' && github.ref_name == 'main'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure kubeconfig
+        run: |
+          mkdir -p ~/.kube
+          echo "${{ secrets.KUBE_CONFIG_BASE64 }}" | base64 --decode > ~/.kube/config
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+
+      - name: Deploy with Helm
+        run: |
+          helm upgrade --install delivery-app ./delivery-app \
+            --namespace delivery-app \
+            --create-namespace \
+            --set backend.image.repository=${{ secrets.DOCKERHUB_USERNAME }}/delivery-backend \
+            --set backend.image.tag=${{ github.sha }} \
+            --set frontend.image.repository=${{ secrets.DOCKERHUB_USERNAME }}/delivery-frontend \
+            --set frontend.image.tag=${{ github.sha }}
